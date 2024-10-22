@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Super Sport 3 | MTS IPTV</title>
+    <style>
+        /* Styles omitted for brevity */
+    </style>
+    <meta name='viewport' content='width=device-width, initial-scale=1.0' />
+    <meta name="referrer" content="no-referrer" />
+    <script src='https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/shaka-player.ui.min.js' crossorigin='anonymous'></script>
+    <link rel='stylesheet' href='https://cdnjs.cloudflare.com/ajax/libs/shaka-player/4.3.5/controls.min.css' crossorigin='anonymous' />
+</head>
+<body>
+    <center><b><p style="color:white; opacity:0.27;">MTS IPTV</p></b></center>
+    <div data-shaka-player-container style='position:absolute; z-index: -1; top: 0; left: 0; width: 100%; height: 100%; object-fit: cover;'>
+        <video autoplay data-shaka-player poster="https://i.ibb.co/cYxSzzk/photo-2024-09-06-02-47-06.jpg" id='video' style='width:100%; height:100%;'></video>
+    </div>
+   <script>
+        async function getBearerToken() {
+            const response = await fetch('default_dash.php');
+            const token = await response.text();
+            return token;
+        }
+
+        async function init() {
+            const video = document.getElementById('video');
+            const ui = video['ui'];
+            const controls = ui.getControls();
+            const player = controls.getPlayer();
+            window.player = player;
+            window.ui = ui;
+
+            const manifestUri = "https://d3ey18635ukr4v.cloudfront.net/CH1/masterCH1.mpd";
+            const bearerToken = await getBearerToken();
+
+            player.configure({
+                drm: {
+                    clearKeys: {
+                        "c5e64178c33e4185a3406d84252cd7a0": "3bedd0bcd11756016c9a3ccbe79f6665"
+                    }
+                },
+                abr: {
+                    defaultBandwidthEstimate: 16888,
+                    enabled: true,
+                    restrictions: {
+                        minHeight: 359,
+                        maxHeight: 720
+                    }
+                }
+            });
+
+            player.addEventListener('error', onPlayerErrorEvent);
+            controls.addEventListener('error', onUIErrorEvent);
+
+            try {
+                await player.load(manifestUri);
+                console.log('The video has now been loaded!');
+            } catch (error) {
+                onPlayerError(error);
+            }
+
+            player.getNetworkingEngine().registerRequestFilter(function (type, request) {
+                if (type == shaka.net.NetworkingEngine.RequestType.SEGMENT) {
+                    request.headers['authorization'] = 'Bearer ' + bearerToken;
+                    request.headers['referer'] = 'https://sooka.my/';
+                    request.headers['user-agent'] = 'Mozilla/5.0 (Linux; Android 10; MI 9 Build/QKQ1.190825.002; wv) AppleWebKit/537.36 (KHTML, like Gecko) Version/4.0 Chrome/111.0.5563.58 Mobile Safari/537.36';
+                }
+            });
+        }
+
+        function onPlayerErrorEvent(errorEvent) {
+            onPlayerError(errorEvent.detail);
+        }
+
+        function onPlayerError(error) {
+            console.error('Error code', error.code, 'object', error);
+        }
+
+        function onUIErrorEvent(errorEvent) {
+            onPlayerError(errorEvent.detail);
+        }
+
+        function initFailed(errorEvent) {
+            console.error('Unable to load the UI library!');
+        }
+
+        document.addEventListener('shaka-ui-loaded', init);
+        document.addEventListener('shaka-ui-load-failed', initFailed);
+    </script>
+
+</body>
+</html>
